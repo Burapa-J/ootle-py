@@ -4,12 +4,13 @@
 |----------------------------|---------------------------------------------------|
 | `crypto_vectors.json`      | Per-method known-input/known-output WASM vectors. |
 | `addresses_corpus.json`    | bech32m address strings + decoded byte fields.    |
+| `bor_vectors.json`         | Indexer CBOR values, copied from upstream's golden vectors (`ootle_sdk_core/fixtures`). |
 
 ## Hex encoding
 
 All byte blobs are lowercase hex with **no `0x` prefix**. Empty buffers
 are encoded as the empty string `""`. JSON `null` represents an absent
-optional field (e.g. `memo`).
+optional field (e.g. `destination_tag`).
 
 ## Provenance
 

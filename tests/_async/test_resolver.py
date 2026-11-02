@@ -32,7 +32,7 @@ def _empty_unsigned() -> UnsignedTransaction:
                 "inputs": [],
                 "min_epoch": None,
                 "max_epoch": 11,
-                "is_seal_signer_authorized": True,
+                "main_signer": "SealSigner",
                 "dry_run": False,
             }
         )
@@ -52,7 +52,7 @@ async def test_required_specific_substate_present_added(httpx_mock: HTTPXMock) -
     httpx_mock.add_response(
         url="http://idx/substates/fetch",
         method="POST",
-        json={"substates": {"component_z": {"version": 1, "substate": {"Component": {}}}}},
+        json={"substates": {"component_z": batch_entry({"Component": {}}, version=1)}},
     )
     transport = AsyncIndexerTransport("http://idx")
     resolver = AsyncTransactionInputResolver(transport)
@@ -77,7 +77,7 @@ async def test_optional_specific_substate_present_added(httpx_mock: HTTPXMock) -
     httpx_mock.add_response(
         url="http://idx/substates/fetch",
         method="POST",
-        json={"substates": {"component_z": {"version": 1, "substate": {"Component": {}}}}},
+        json={"substates": {"component_z": batch_entry({"Component": {}}, version=1)}},
     )
     transport = AsyncIndexerTransport("http://idx")
     resolver = AsyncTransactionInputResolver(transport)

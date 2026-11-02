@@ -4,7 +4,8 @@ Public surface (used by ``_wasm_provider``):
 
 - :class:`Bridge` — handle bundling the runtime, exports, panic state, and
   the ABI helpers needed to call WASM exports.
-- :func:`load_default_bridge` — process-wide cached factory.
+- :func:`load_default_bridge` — process-wide cached factory for the core blob.
+- :func:`load_bor_bridge` — the same for the ``ootle-wasm-bor`` decoder blob.
 - :func:`define_imports` — passed to :func:`WasmRuntime.load` to wire
   ``__wbg_*`` host imports onto the linker.
 
@@ -20,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 import wasmtime
 
-from ootle._crypto._wasm_runtime import WasmRuntime
+from ootle._crypto._wasm_runtime import BOR_BLOB, CORE_BLOB, BlobSpec, WasmRuntime
 
 from ._imports import define_imports
 
@@ -67,14 +68,14 @@ class Bridge:
         return msg
 
     @classmethod
-    def load_default(cls) -> Bridge:
-        """Load the vendored blob and wire every host import."""
+    def load_default(cls, spec: BlobSpec = CORE_BLOB) -> Bridge:
+        """Load a vendored blob (the core blob by default) and wire every host import."""
         bridge = cls()
 
         def _wire(store: wasmtime.Store, module: wasmtime.Module, linker: wasmtime.Linker) -> None:
             define_imports(store, module, linker, bridge)
 
-        bridge.runtime = WasmRuntime.load(define_imports=_wire)
+        bridge.runtime = WasmRuntime.load(define_imports=_wire, spec=spec)
         # wasm-bindgen places initial setup behind an explicit start export.
         start = bridge.exports["__wbindgen_start"]
         if not isinstance(start, wasmtime.Func):
@@ -85,11 +86,21 @@ class Bridge:
 
 
 _singleton_lock = threading.Lock()
-_singleton: Bridge | None = None
+_singletons: dict[BlobSpec, Bridge] = {}
 
 
 def load_default_bridge() -> Bridge:
-    """Return the process-wide singleton bridge.
+    """Return the process-wide singleton bridge over the core blob."""
+    return _load_singleton(CORE_BLOB)
+
+
+def load_bor_bridge() -> Bridge:
+    """Return the process-wide singleton bridge over the ``ootle-wasm-bor`` blob."""
+    return _load_singleton(BOR_BLOB)
+
+
+def _load_singleton(spec: BlobSpec) -> Bridge:
+    """Return the process-wide bridge for *spec*, instantiating it once.
 
     Double-checked locking — ``functools.cache`` is not safe for the
     *first* call when multiple threads race; wasmtime drops the GIL
@@ -97,13 +108,15 @@ def load_default_bridge() -> Bridge:
     each instantiate a separate engine and one would be silently
     discarded with native resources still attached.
     """
-    global _singleton  # noqa: PLW0603 - module-level cache
-    if _singleton is not None:
-        return _singleton
+    existing = _singletons.get(spec)
+    if existing is not None:
+        return existing
     with _singleton_lock:
-        if _singleton is None:
-            _singleton = Bridge.load_default()
-        return _singleton
+        bridge = _singletons.get(spec)
+        if bridge is None:
+            bridge = Bridge.load_default(spec)
+            _singletons[spec] = bridge
+        return bridge
 
 
-__all__ = ["Bridge", "load_default_bridge"]
+__all__ = ["Bridge", "load_bor_bridge", "load_default_bridge"]

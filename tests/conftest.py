@@ -10,8 +10,15 @@ from typing import Any
 import pytest
 
 from ootle._crypto import CryptoProvider, load_default_provider
+from tests._helpers.encoded import install_fake_decoder
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(autouse=True)
+def _fake_encoded_decoder(monkeypatch: pytest.MonkeyPatch) -> None:  # pyright: ignore[reportUnusedFunction]
+    """Decode hand-built ``encoded(...)`` indexer fields; see ``tests/_helpers/encoded``."""
+    install_fake_decoder(monkeypatch)
 
 
 @pytest.fixture(scope="session")

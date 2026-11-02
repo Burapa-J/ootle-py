@@ -22,6 +22,7 @@ ExecutionFailureCode = Literal[
     "InvalidProof",
     "EngineInvariant",
     "NotYetValid",
+    "Conflict",
     "Unclassified",
 ]
 """Categorical code of an ``ExecutionFailure`` rejection."""

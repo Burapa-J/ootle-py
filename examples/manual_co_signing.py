@@ -84,7 +84,7 @@ async def main() -> None:
         recipient2 = new_recipient()
         unsigned = await (
             client.account()
-            .pay_fee(1000)
+            .pay_fee(10_000)
             .public_transfer(recipient1, TARI_RESOURCE, tari(2))
             .public_transfer(recipient2, TARI_RESOURCE, tari(1))
             .prepare()

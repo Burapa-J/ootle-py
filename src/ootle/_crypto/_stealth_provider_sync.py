@@ -67,6 +67,7 @@ class SyncStealthCryptoProvider(Protocol):
         self,
         network_byte: int,
         owner_secret: bytes,
+        view_secret: bytes,
         public_nonce: bytes,
     ) -> bytes:
         """Sync counterpart of :meth:`StealthCryptoProvider.stealth_dh_secret`."""

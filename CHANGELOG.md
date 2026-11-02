@@ -5,6 +5,58 @@ All notable changes to `ootle` are recorded here. The project follows
 releases may introduce breaking changes between minor versions, but
 each is called out below.
 
+## [Unreleased]
+
+Tracks the upstream
+[`tari-ootle` v0.49.1](https://github.com/tari-project/tari-ootle/releases/tag/v0.49.1)
+release, with the v0.48.0 and v0.49.0 wire changes. Clients before this
+release cannot read a 0.48+ indexer or sign for a 0.48+ network.
+
+### Breaking
+
+- **`Address.destination_tag` replaces `Address.memo`**, following upstream's
+  PayRef → destination tag rename. The `Address.from_keys(..., destination_tag=...)`
+  keyword and `ParsedAddress.destination_tag` are renamed to match. The
+  encoded addresses are byte-identical.
+- **`CryptoProvider.schnorr_sign` is removed.** The blob no longer exports
+  it: transactions are signed with sr25519 inside the blob.
+- **`StealthCryptoProvider.stealth_dh_secret` takes the view secret**
+  (`network_byte, owner_secret, view_secret, public_nonce`), because 0.48
+  derives stealth spend keys from the view key. `LocalSigner` passes its
+  own; custom providers and signers must add the parameter.
+
+### Changed
+
+- **Vendored `ootle-wasm` bumped to 0.49.1.**
+- **New vendored blob `ootle-wasm-bor` 0.49.1** (about 470 KB). From 0.48 the
+  indexer serves substate values, execution results, receipts and events as
+  base64 CBOR, and this blob decodes them. It is loaded and hash-checked like
+  the main blob, and `make update-wasm` now refreshes both.
+- Transactions now carry `main_signer: "SealSigner"` in place of
+  `is_seal_signer_authorized`. Stealth inputs now carry a `KeyPath` witness,
+  and transfer statements an empty `covenant_claims` list.
+- Example and README transfer fees are raised to 10,000 for 0.48 pricing
+  (a public transfer now costs about 5.2k).
+
+### Added
+
+- **Proof windows (0.49).** The new `TransactionBuilder.authorize_proof(label)`,
+  `drop_proof_authorization(label)` and `with_authorized_proof(label, f)`
+  emit the new `AuthorizeProof` / `DropProofAuthorization` instructions.
+  Merging builders remaps their workspace ids.
+- `AbortReason` covers `GovernanceCallAfterPinnedEpoch`, and
+  `ExecutionFailureCode` covers `Conflict`. Before this, an abort for the
+  new reason failed to parse.
+
+### Fixed
+
+- **Every indexer read parses the 0.48 responses.** These are
+  `GET /substates/{id}` (`state.up.substate`), `POST /substates/fetch` (now
+  `{version, value}`), the dry-run `result`, the `execution_result` of
+  `GET /transactions/{id}/result`, `GET /transaction-receipts/{id}`, and
+  `watch_events()`. A value that does not decode raises `IndexerClientError`;
+  `watch_events()` skips such an event.
+
 ## [0.3.2] — 2026-10-20
 
 ### Changed

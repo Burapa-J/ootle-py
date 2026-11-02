@@ -14,6 +14,7 @@ from ootle._types._json import (
 )
 from ootle._types.diff_summary import DownSubstate
 from ootle._types.substate import SubstateId
+from tests._helpers.encoded import encoded
 
 _FEE_RECEIPT: dict[str, Any] = {
     "total_fee_payment": 0,
@@ -74,16 +75,16 @@ def test_parse_diff_summary_rejects_non_string_substate_id() -> None:
 
 
 def test_parse_sse_event_numeric_id() -> None:
-    ev = parse_sse_event("T::E", "42", {"event": {}})
+    ev = parse_sse_event("T::E", "42", {"event": encoded({})})
     assert ev.id == 42
 
 
 def test_parse_sse_event_empty_id_is_none() -> None:
-    ev = parse_sse_event("T::E", "", {"event": {}})
+    ev = parse_sse_event("T::E", "", {"event": encoded({})})
     assert ev.id is None
 
 
 def test_parse_sse_event_non_numeric_id_is_none_no_raise() -> None:
-    ev = parse_sse_event("T::E", "9f1c-uuid-style", {"event": {}})
+    ev = parse_sse_event("T::E", "9f1c-uuid-style", {"event": encoded({})})
     assert ev.id is None
     assert ev.topic == "T::E"

@@ -9,19 +9,23 @@ Distinct from :mod:`ootle._types._json` so the file stays under the
 - ``POST substates/fetch`` → ``dict[SubstateId, Substate]``
 - ``POST transactions`` → :class:`TransactionId`
 - ``GET transactions/{id}/result`` → tuple ``(is_finalized, outcome | None)``
+
+Engine values (substate values, the execution result) arrive as base64 CBOR
+and are decoded through :mod:`ootle._types._encoded`.
 """
 
 from __future__ import annotations
 
 from typing import Any, cast
 
+from ootle._types._encoded import EncodedKind, decode_encoded_object
 from ootle._types._json_helpers import require_dict, require_int, require_str
 from ootle._types._reject_reason_json import parse_reject_reason, unwrap_tuple_reason
 from ootle._types._substate_json import parse_substate_value
 from ootle._types.network import Network, NetworkInfo
 from ootle._types.outcome import TransactionOutcome
 from ootle._types.reject_reason import format_reject_reason
-from ootle._types.substate import Substate, SubstateId
+from ootle._types.substate import Substate, SubstateId, SubstateValue
 from ootle._types.transaction import TransactionId
 
 
@@ -42,7 +46,7 @@ def parse_indexer_substate(id_: SubstateId, payload: dict[str, Any]) -> Substate
     """Parse ``GET substates/{id}`` → :class:`Substate`, or ``None`` when down.
 
     The response shape is ``{version, state, verified, proof?}`` (no ``id``),
-    where ``state`` is ``{"up": {"substate": ...}}`` or ``{"down": {}}``. The
+    where ``state`` is ``{"up": {"substate": <base64 CBOR>}}`` or ``{"down": {}}``. The
     id is the URL parameter, so we synthesise the envelope by attaching
     ``id_``. A down answer only follows an ``include_proof`` request, which
     this client never sends, but it means "spent", so it maps to ``None``.
@@ -53,22 +57,26 @@ def parse_indexer_substate(id_: SubstateId, payload: dict[str, Any]) -> Substate
     return Substate(
         id=id_,
         version=require_int(payload, "version"),
-        value=parse_substate_value(require_dict(require_dict(state, "up"), "substate")),
+        value=_decode_value(require_dict(state, "up").get("substate"), "state.up.substate"),
     )
+
+
+def _decode_value(encoded: object, field: str) -> SubstateValue:
+    return parse_substate_value(decode_encoded_object(EncodedKind.SUBSTATE_VALUE, encoded, field))
 
 
 def _parse_versioned(id_: SubstateId, payload: dict[str, Any]) -> Substate:
     return Substate(
         id=id_,
         version=require_int(payload, "version"),
-        value=parse_substate_value(require_dict(payload, "substate")),
+        value=_decode_value(payload.get("value"), f"substates['{id_.opaque}'].value"),
     )
 
 
 def parse_indexer_substates_map(payload: dict[str, Any]) -> dict[SubstateId, Substate]:
     """Parse ``POST substates/fetch`` → ``{SubstateId: Substate}``.
 
-    The indexer returns ``{substates: {<id>: {version, substate, ...}}}``.
+    The indexer returns ``{substates: {<id>: {version, value: <base64 CBOR>}}}``.
     Missing-from-result substates are simply absent from the map.
     """
     raw = require_dict(payload, "substates")
@@ -138,10 +146,11 @@ def _decode_finalized(fin: dict[str, Any]) -> TransactionOutcome:
 
 
 def _engine_result(fin: dict[str, Any]) -> Any:
-    exec_result = fin.get("execution_result")
-    if not isinstance(exec_result, dict):
+    encoded = fin.get("execution_result")
+    if encoded is None:
         return None
-    finalize = cast("dict[str, Any]", exec_result).get("finalize")
+    exec_result = decode_encoded_object(EncodedKind.EXECUTE_RESULT, encoded, "execution_result")
+    finalize = exec_result.get("finalize")
     if not isinstance(finalize, dict):
         return None
     return cast("dict[str, Any]", finalize).get("result")

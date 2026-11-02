@@ -8,6 +8,14 @@ from ootle._crypto import _wasm_runtime as rt
 from ootle.errors import CryptoBridgeError
 
 
+def _bogus_blob(_spec: rt.BlobSpec = rt.CORE_BLOB) -> bytes:
+    return b"\x00asm\x00\x00\x00\x00bogus"
+
+
+def _short_version(_spec: rt.BlobSpec = rt.CORE_BLOB) -> rt._Version:  # pyright: ignore[reportPrivateUsage]
+    return rt._parse_version("only one line\n")  # pyright: ignore[reportPrivateUsage]
+
+
 def test_load_blob_succeeds_and_returns_version() -> None:
     blob, version = rt.load_blob()
     assert blob.startswith(b"\x00asm")
@@ -20,13 +28,13 @@ def test_load_with_stub_imports_instantiates() -> None:
 
 
 def test_tampered_blob_raises_crypto_bridge_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(rt, "_read_blob", lambda: b"\x00asm\x00\x00\x00\x00bogus")
+    monkeypatch.setattr(rt, "_read_blob", _bogus_blob)
     with pytest.raises(CryptoBridgeError, match="SHA-256 mismatch"):
         rt.load_blob()
 
 
 def test_tampered_version_raises_crypto_bridge_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(rt, "_read_version", lambda: rt._parse_version("only one line\n"))  # pyright: ignore[reportPrivateUsage]
+    monkeypatch.setattr(rt, "_read_version", _short_version)
     with pytest.raises(CryptoBridgeError, match="VERSION"):
         rt.load_blob()
 

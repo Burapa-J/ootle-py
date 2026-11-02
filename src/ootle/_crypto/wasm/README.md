@@ -4,7 +4,7 @@ This directory holds the WebAssembly bridge artefact that backs the entire
 `ootle._crypto` layer:
 
 ```
-ootle_wasm_bg.wasm    # binary blob; ~800 KB
+ootle_wasm_bg.wasm    # binary blob; ~1.3 MB
 VERSION               # upstream version + sha256 + fetch date + source URL
 ```
 
@@ -17,7 +17,8 @@ Both files are committed to git and shipped in the wheel as package data.
 make update-wasm WASM_VERSION=<x.y.z>
 ```
 
-This invokes `scripts/update_wasm.py`, which downloads the npm tarball
+This invokes `scripts/update_wasm.py` once per blob (this one, and the
+`ootle-wasm-bor` decoders in `../wasm_bor/`). For this blob it downloads the npm tarball
 `@tari-project/ootle-wasm@<x.y.z>`, extracts the blob, recomputes its
 SHA-256, and rewrites `ootle_wasm_bg.wasm` and `VERSION` here.
 

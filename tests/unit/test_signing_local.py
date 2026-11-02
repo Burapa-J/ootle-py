@@ -115,7 +115,7 @@ def test_add_stealth_signature_derives_one_time_key_then_signs() -> None:
     """The stealth signature is produced by the one-time key, not the account key.
 
     ``add_stealth_signature`` must first derive the one-time spend secret
-    via ``stealth_dh_secret`` (account secret + UTXO public nonce), then
+    via ``stealth_dh_secret`` (account + view secret + UTXO public nonce), then
     feed *that* secret — never the raw owner secret — to the bridge.
     """
     mock = MockCryptoProvider()
@@ -130,7 +130,9 @@ def test_add_stealth_signature_derives_one_time_key_then_signs() -> None:
 
     out = signer.add_stealth_signature("tx-json", public_nonce, seal_pk, crypto=mock)
 
-    one_time = mock.stealth_dh_secret(Network.LOCAL_NET.value, sk.owner_secret, public_nonce)
+    one_time = mock.stealth_dh_secret(
+        Network.LOCAL_NET.value, sk.owner_secret, sk.view_secret, public_nonce
+    )
     assert out == mock.add_transaction_signer("tx-json", one_time, seal_pk)
     # Signing with the raw account secret would produce a different marker.
     assert out != mock.add_transaction_signer("tx-json", sk.owner_secret, seal_pk)

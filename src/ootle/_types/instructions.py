@@ -28,9 +28,11 @@ from ootle._types._instruction_args import (
     resource_address_literal,
 )
 from ootle._types._instruction_variants import (
+    AuthorizeProof,
     CallFunction,
     CallMethod,
     CreateAccount,
+    DropProofAuthorization,
     PayFeeFromBucket,
     PublishTemplate,
     PutLastInstructionOutputOnWorkspace,
@@ -45,15 +47,19 @@ Instruction = (
     | PayFeeFromBucket
     | PublishTemplate
     | StealthTransferInstruction
+    | AuthorizeProof
+    | DropProofAuthorization
 )
 
 __all__ = [
+    "AuthorizeProof",
     "CallFunction",
     "CallMethod",
     "ComponentRefAddress",
     "ComponentRefWorkspace",
     "ComponentReference",
     "CreateAccount",
+    "DropProofAuthorization",
     "Instruction",
     "InstructionArg",
     "InstructionArgLiteral",

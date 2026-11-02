@@ -21,6 +21,7 @@ from ootle._sync._transport import IndexerTransport
 from ootle._sync._watcher import PendingTransaction
 from ootle._types.transaction import TransactionId
 from ootle.errors import TransactionRejectedError
+from tests._helpers.encoded import encoded
 
 _TX = TransactionId("deadbeef" * 8)
 _FINALIZED_COMMIT = {"result": {"Finalized": {"final_decision": "Commit"}}}
@@ -28,13 +29,17 @@ _FINALIZED_ABORT = {
     "result": {
         "Finalized": {
             "final_decision": {"Abort": "ExecutionFailure"},
-            "execution_result": {
-                "finalize": {
-                    "result": {
-                        "Reject": {"ExecutionFailure": {"code": "TemplateError", "message": "boom"}}
+            "execution_result": encoded(
+                {
+                    "finalize": {
+                        "result": {
+                            "Reject": {
+                                "ExecutionFailure": {"code": "TemplateError", "message": "boom"}
+                            }
+                        }
                     }
                 }
-            },
+            ),
         }
     }
 }

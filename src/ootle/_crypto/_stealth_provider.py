@@ -124,9 +124,10 @@ class StealthCryptoProvider(Protocol):
         self,
         network_byte: int,
         owner_secret: bytes,
+        view_secret: bytes,
         public_nonce: bytes,
     ) -> bytes:
-        """Diffie-Hellman: derive the 32-byte shared stealth secret."""
+        """Derive the one-time spend scalar ``c + k``, ``c = H(network || v·R)`` (32 bytes)."""
         ...
 
     def validate_transfer(self, transfer_statement: StealthTransferStatement) -> None:

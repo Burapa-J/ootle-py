@@ -58,13 +58,13 @@ class StealthSpendCrypto(Protocol):
     """
 
     def stealth_dh_secret(
-        self, network_byte: int, owner_secret: bytes, public_nonce: bytes
+        self, network_byte: int, owner_secret: bytes, view_secret: bytes, public_nonce: bytes
     ) -> bytes:
         """Derive the one-time stealth spend scalar ``c + k`` (32 bytes)."""
         ...
 
     def add_transaction_signer(self, tx_json: str, signer_sk: bytes, seal_pk: bytes) -> str:
-        """Append a Schnorr signature from ``signer_sk`` to ``tx_json``."""
+        """Append an sr25519 signature from ``signer_sk`` to ``tx_json``."""
         ...
 
 
@@ -104,7 +104,7 @@ class LocalSigner:
         return self._address_cache
 
     def add_signature(self, tx_json: str, seal_pk: bytes, *, crypto: CryptoProvider) -> str:
-        """Append a Schnorr signature using the owner secret.
+        """Append an sr25519 signature using the owner secret.
 
         ``seal_pk`` is the owner public key of the wallet's seal signer,
         which the signing message commits to.
@@ -118,11 +118,11 @@ class LocalSigner:
     def add_stealth_signature(
         self, tx_json: str, public_nonce: bytes, seal_pk: bytes, *, crypto: StealthSpendCrypto
     ) -> str:
-        """Append a Schnorr signature from the one-time stealth spend key.
+        """Append an sr25519 signature from the one-time stealth spend key.
 
         Derives the one-time spend scalar ``c + k`` for the stealth UTXO
-        whose sender nonce is ``public_nonce`` (Diffie-Hellman of this
-        signer's account secret with that nonce), then signs ``tx_json``
+        whose sender nonce is ``public_nonce`` (``c = H(network || v·R)``
+        from this signer's view secret, plus its account secret), then signs ``tx_json``
         with it. Mirrors Rust ``sign_authorization_with_stealth``; the
         derived key's public key is the UTXO's ``SpendAuthorization::Key``
         value, so the engine accepts the spend.
@@ -131,6 +131,9 @@ class LocalSigner:
         message commits to.
         """
         one_time_secret = crypto.stealth_dh_secret(
-            self._secret.network.value, self._secret.owner_secret, public_nonce
+            self._secret.network.value,
+            self._secret.owner_secret,
+            self._secret.view_secret,
+            public_nonce,
         )
         return crypto.add_transaction_signer(tx_json, one_time_secret, seal_pk)

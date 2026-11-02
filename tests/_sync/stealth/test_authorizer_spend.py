@@ -90,7 +90,7 @@ def test_create_authorizations_signs_each_input_with_one_time_key(
     assert len(auths) == 1
     sig = json.loads(auths[0].json)["signatures"][0]
     one_time = provider.stealth_dh_secret(
-        Network.LOCAL_NET.value, secret.owner_secret, public_nonce
+        Network.LOCAL_NET.value, secret.owner_secret, secret.view_secret, public_nonce
     )
     assert sig["public_key"] == provider.public_key_from_secret(one_time).hex()
     # Crucially NOT the raw account owner key — that is the whole bug.

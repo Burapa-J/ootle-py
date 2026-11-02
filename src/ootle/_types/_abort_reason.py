@@ -21,6 +21,7 @@ AbortReason = Literal[
     "EpochExpired",
     "ValidityWindowTooLong",
     "InputPledgeTooLarge",
+    "GovernanceCallAfterPinnedEpoch",
 ]
 """Categorical reason an abort happened — Rust ``AbortReason`` enum.
 

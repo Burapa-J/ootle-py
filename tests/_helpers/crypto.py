@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
-from ootle._crypto import ParsedAddress, SchnorrSignatureResult
+from ootle._crypto import ParsedAddress
 
 
 def _sha(*parts: bytes | str | int) -> bytes:
@@ -55,9 +55,9 @@ class MockCryptoProvider:
         owner_pk: bytes,
         view_pk: bytes,
         network: int,
-        memo: bytes | None = None,
+        destination_tag: bytes | None = None,
     ) -> str:
-        digest = _sha(b"addr", owner_pk, view_pk, network, memo or b"")
+        digest = _sha(b"addr", owner_pk, view_pk, network, destination_tag or b"")
         return "otl_mock_" + digest.hex()
 
     def parse_ootle_address(self, address: str) -> ParsedAddress:
@@ -68,14 +68,7 @@ class MockCryptoProvider:
             owner_key=_sha(b"opk_owner", digest),
             view_key=_sha(b"opk_view", digest),
             network=0,
-            memo=None,
-        )
-
-    def schnorr_sign(self, sk: bytes, message: bytes) -> SchnorrSignatureResult:
-        nonce = _sha(b"nonce", sk, message)
-        return SchnorrSignatureResult(
-            public_nonce=nonce,
-            signature=_sha(b"sig", sk, nonce, message),
+            destination_tag=None,
         )
 
     def hash_unsigned_transaction(self, unsigned_json: str, seal_pk: bytes) -> bytes:
@@ -86,9 +79,9 @@ class MockCryptoProvider:
         return f'{{"prev":{tx_json},"signer":"{marker}"}}'
 
     def stealth_dh_secret(
-        self, network_byte: int, owner_secret: bytes, public_nonce: bytes
+        self, network_byte: int, owner_secret: bytes, view_secret: bytes, public_nonce: bytes
     ) -> bytes:
-        return _sha(b"stealth_dh", network_byte, owner_secret, public_nonce)
+        return _sha(b"stealth_dh", network_byte, owner_secret, view_secret, public_nonce)
 
     def seal_transaction(self, tx_json: str, seal_sk: bytes) -> str:
         marker = _sha(b"seal", seal_sk).hex()

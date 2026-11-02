@@ -82,7 +82,7 @@ async def main() -> None:
         recipient = OotleSecretKey.random(Network.LOCAL_NET).to_address()
         unsigned = await (
             client.account()
-            .pay_fee(1000)
+            .pay_fee(10_000)
             .public_transfer(recipient, resource, 2 * TARI)
             .prepare()
         )
@@ -250,8 +250,9 @@ drift.
 
 Released under the **BSD 3-Clause** license — see [`LICENSE`](https://github.com/tari-project/ootle-py/blob/main/LICENSE).
 
-The vendored WASM blob is built from
+The vendored WASM blobs are built from
 [`@tari-project/ootle-wasm`](https://www.npmjs.com/package/@tari-project/ootle-wasm)
-and ships inside the wheel under
-`src/ootle/_crypto/wasm/ootle_wasm_bg.wasm`, with its upstream version
-and SHA-256 recorded in `VERSION` and verified at load.
+and [`@tari-project/ootle-wasm-bor`](https://www.npmjs.com/package/@tari-project/ootle-wasm-bor)
+and ship inside the wheel under `src/ootle/_crypto/wasm/` and
+`src/ootle/_crypto/wasm_bor/`, each with its upstream version and SHA-256
+recorded in `VERSION` and verified at load.

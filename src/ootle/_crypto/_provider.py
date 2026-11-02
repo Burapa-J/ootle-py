@@ -35,7 +35,7 @@ from typing import Protocol
 
 @dataclass(frozen=True, slots=True)
 class SchnorrSignatureResult:
-    """Output of :meth:`CryptoProvider.schnorr_sign`."""
+    """A ``(public_nonce, signature)`` pair, as the balance-proof export returns it."""
 
     public_nonce: bytes
     signature: bytes
@@ -48,7 +48,7 @@ class ParsedAddress:
     owner_key: bytes
     view_key: bytes
     network: int
-    memo: bytes | None
+    destination_tag: bytes | None
 
 
 class CryptoProvider(Protocol):
@@ -81,17 +81,13 @@ class CryptoProvider(Protocol):
         owner_pk: bytes,
         view_pk: bytes,
         network: int,
-        memo: bytes | None = None,
+        destination_tag: bytes | None = None,
     ) -> str:
         """Produce a bech32m Ootle address string."""
         ...
 
     def parse_ootle_address(self, address: str) -> ParsedAddress:
         """Decode a bech32m Ootle address into its byte components."""
-        ...
-
-    def schnorr_sign(self, sk: bytes, message: bytes) -> SchnorrSignatureResult:
-        """Schnorr-sign ``message`` with ``sk`` (Ristretto)."""
         ...
 
     def hash_unsigned_transaction(self, unsigned_json: str, seal_pk: bytes) -> bytes:

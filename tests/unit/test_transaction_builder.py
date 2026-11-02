@@ -22,7 +22,7 @@ def test_empty_builder_emits_minimal_envelope() -> None:
     assert body["fee_instructions"] == []
     assert body["instructions"] == []
     assert body["inputs"] == []
-    assert body["is_seal_signer_authorized"] is True
+    assert body["main_signer"] == "SealSigner"
     assert body["dry_run"] is False
 
 

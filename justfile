@@ -85,17 +85,18 @@ ci-verify-sync:
 # WASM bridge
 # ---------------------------------------------------------------------------
 
-# Refresh the vendored WASM blob. Usage: `just update-wasm 0.30.0`.
+# Refresh both vendored WASM blobs. Usage: `just update-wasm 0.30.0`.
 update-wasm version:
-    uv run python scripts/update_wasm.py --version {{version}}
+    uv run python scripts/update_wasm.py --blob core --version {{version}}
+    uv run python scripts/update_wasm.py --blob bor --version {{version}}
 
-# Vendor a locally built WASM blob. Usage: `just update-wasm-local /path/to/pkg`.
-update-wasm-local pkg:
-    uv run python scripts/update_wasm.py --from-pkg {{pkg}}
+# Vendor a locally built WASM blob. Usage: `just update-wasm-local /path/to/pkg [bor]`.
+update-wasm-local pkg blob="core":
+    uv run python scripts/update_wasm.py --blob {{blob}} --from-pkg {{pkg}}
 
-# Verify SHA-256 of the vendored WASM blob and that the loader instantiates.
+# Verify SHA-256 of both vendored WASM blobs and that the loader instantiates.
 ci-verify-wasm:
-    uv run python -c "from ootle._crypto import load_default_provider; load_default_provider()"
+    uv run python -c "from ootle._crypto import load_default_provider; from ootle._crypto._bridge import load_bor_bridge; load_default_provider(); load_bor_bridge()"
 
 # Convenience: format, fix, type-check, then test. Use during development.
 check: format lint-fix typecheck test

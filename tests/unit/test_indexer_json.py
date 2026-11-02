@@ -12,6 +12,7 @@ from ootle._types._indexer_json import (
     parse_transaction_result,
 )
 from ootle._types.reject_reason import ExecutionFailure, InsufficientFeesPaid
+from tests._helpers.encoded import encoded
 
 
 def test_substates_map_rejects_non_object_value() -> None:
@@ -68,20 +69,23 @@ def test_transaction_result_only_fee_commit_extracts_typed_reject_reason() -> No
     structured reject reason extracted from the tuple's reason slot.
     Cross-cuts the Bug 02 split (consensus decision vs engine result).
     """
+    accept: dict[str, list[object]] = {"up_substates": []}
     payload: dict[str, Any] = {
         "result": {
             "Finalized": {
                 "final_decision": "Commit",
-                "execution_result": {
-                    "finalize": {
-                        "result": {
-                            "AcceptFeeRejectRest": [
-                                {"up_substates": []},
-                                {"InsufficientFeesPaid": "fees of 100 less than minimum 500"},
-                            ]
+                "execution_result": encoded(
+                    {
+                        "finalize": {
+                            "result": {
+                                "AcceptFeeRejectRest": [
+                                    accept,
+                                    {"InsufficientFeesPaid": "fees of 100 less than minimum 500"},
+                                ]
+                            }
                         }
                     }
-                },
+                ),
             }
         }
     }
@@ -101,9 +105,9 @@ def test_transaction_result_reject_extracts_typed_reject_reason() -> None:
             "Finalized": {
                 "final_decision": "Reject",
                 "abort_details": "Execution failure: stack overflow",
-                "execution_result": {
-                    "finalize": {"result": {"Reject": {"ExecutionFailure": "stack overflow"}}}
-                },
+                "execution_result": encoded(
+                    {"finalize": {"result": {"Reject": {"ExecutionFailure": "stack overflow"}}}}
+                ),
             }
         }
     }

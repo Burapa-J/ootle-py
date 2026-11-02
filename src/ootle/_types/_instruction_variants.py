@@ -72,6 +72,26 @@ class PayFeeFromBucket:
 
 
 @dataclass(frozen=True, slots=True)
+class AuthorizeProof:
+    """``Instruction::AuthorizeProof`` — open an authorization window over a workspace proof."""
+
+    proof: WorkspaceOffsetId
+
+    def to_json(self) -> dict[str, Any]:
+        return {"AuthorizeProof": {"proof": self.proof.to_json()}}
+
+
+@dataclass(frozen=True, slots=True)
+class DropProofAuthorization:
+    """``Instruction::DropProofAuthorization`` — close the window ``AuthorizeProof`` opened."""
+
+    proof: WorkspaceOffsetId
+
+    def to_json(self) -> dict[str, Any]:
+        return {"DropProofAuthorization": {"proof": self.proof.to_json()}}
+
+
+@dataclass(frozen=True, slots=True)
 class CallFunction:
     """``Instruction::CallFunction`` — call a template function by name."""
 

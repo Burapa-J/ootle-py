@@ -6,6 +6,7 @@ from pytest_httpx import HTTPXMock
 
 from ootle._sync._transport import IndexerTransport
 from ootle._types.transaction import TransactionId
+from tests._helpers.encoded import encoded
 
 
 def test_submit_transaction_round_trips(httpx_mock: HTTPXMock) -> None:
@@ -23,7 +24,7 @@ def test_submit_dry_run_returns_dry_run_result(httpx_mock: HTTPXMock) -> None:
     httpx_mock.add_response(
         url="http://idx/transactions/dry-run",
         method="POST",
-        json={"transaction_id": "abcd", "result": {"finalize": {"result": "Accept"}}},
+        json={"transaction_id": "abcd", "result": encoded({"finalize": {"result": "Accept"}})},
     )
     with IndexerTransport("http://idx") as transport:
         result = transport.submit_transaction_dry_run("env==")

@@ -72,28 +72,22 @@ def main() -> None:
         owner_sk = _det(f"addr-owner-{i}")
         view_sk = _det(f"addr-view-{i}")
         owner_pk, view_pk = p.ootle_public_key_from_secret(owner_sk, view_sk)
-        for memo in (None, b"memo-" + bytes([i])):
-            addr = p.generate_ootle_address(owner_pk, view_pk, network, memo)
+        for tag in (None, b"memo-" + bytes([i])):
+            addr = p.generate_ootle_address(owner_pk, view_pk, network, tag)
             parsed = p.parse_ootle_address(addr)
             assert parsed.owner_key == owner_pk
             assert parsed.view_key == view_pk
             assert parsed.network == network
-            assert (parsed.memo or None) == memo
+            assert (parsed.destination_tag or None) == tag
             addr_vectors.append(
                 {
                     "owner_pk": _hex(owner_pk),
                     "view_pk": _hex(view_pk),
                     "network": network,
-                    "memo": _hex(memo) if memo else None,
+                    "destination_tag": _hex(tag) if tag else None,
                     "address": addr,
                 }
             )
-
-    schnorr_vectors = []
-    for i in range(3):
-        sk = _det(f"sign-sk-{i}")
-        msg = _det(f"sign-msg-{i}")
-        schnorr_vectors.append({"sk": _hex(sk), "message": _hex(msg)})
 
     crypto_vectors = {
         "schema_version": 1,
@@ -107,7 +101,6 @@ def main() -> None:
             "public_key_from_secret": pk_vectors,
             "ootle_public_key_from_secret": opk_vectors,
             "address_round_trip": addr_vectors,
-            "schnorr_sign_inputs": schnorr_vectors,
         },
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
