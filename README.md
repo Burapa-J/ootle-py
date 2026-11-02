@@ -82,7 +82,7 @@ async def main() -> None:
         recipient = OotleSecretKey.random(Network.LOCAL_NET).to_address()
         unsigned = await (
             client.account()
-            .pay_fee(1000)
+            .pay_fee(10_000)
             .public_transfer(recipient, resource, 2 * TARI)
             .prepare()
         )
