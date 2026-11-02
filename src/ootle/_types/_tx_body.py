@@ -16,6 +16,13 @@ if TYPE_CHECKING:
 
 _MAX_BLOBS = 256
 
+MAIN_SIGNER_SEAL_SIGNER = "SealSigner"
+"""JSON form of ``MainSigner::SealSigner``: the seal signer authorizes and is the main signer.
+
+The other variants are ``"None"`` and ``{"Authorizer": <key hex>}``; this client
+only builds transactions its seal signer authorizes (upstream's default).
+"""
+
 DEFAULT_MAX_EPOCH_WINDOW = 10
 """Epochs past the current one that client-side builders grant a transaction by default.
 
@@ -93,7 +100,7 @@ class UnsignedTransactionV1Body:
     inputs: list[SubstateRequirement]
     min_epoch: int | None = None
     max_epoch: int | None = None
-    is_seal_signer_authorized: bool = True
+    main_signer: str = MAIN_SIGNER_SEAL_SIGNER
     dry_run: bool = False
     blobs: list[bytes] = field(default_factory=list[bytes])
     nonce: int = 0
@@ -127,7 +134,7 @@ class UnsignedTransactionV1Body:
             "inputs": [substate_requirement_to_json(r) for r in self.inputs],
             "min_epoch": self.min_epoch,
             "max_epoch": self.max_epoch,
-            "is_seal_signer_authorized": self.is_seal_signer_authorized,
+            "main_signer": self.main_signer,
             "dry_run": self.dry_run,
             "blobs": [base64.b64encode(b).decode() for b in self.blobs],
             "nonce": self.nonce,

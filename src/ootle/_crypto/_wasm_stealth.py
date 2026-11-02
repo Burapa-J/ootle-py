@@ -89,11 +89,13 @@ class WasmStealthMethodsMixin(WasmStealthOutputsMixin):
         self,
         network_byte: int,
         owner_secret: bytes,
+        view_secret: bytes,
         public_nonce: bytes,
     ) -> bytes:
         b = self._bridge
         with b.lock:
             sp, sl = _abi.alloc_bytes(b, owner_secret)
+            vp, vl = _abi.alloc_bytes(b, view_secret)
             np_, nl = _abi.alloc_bytes(b, public_nonce)
-            ret = b.exports["stealthDhSecret"](b.store, network_byte, sp, sl, np_, nl)
+            ret = b.exports["stealthDhSecret"](b.store, network_byte, sp, sl, vp, vl, np_, nl)
             return take_bytes_result(b, ret, context="stealth_dh_secret")

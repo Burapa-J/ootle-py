@@ -10,9 +10,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ootle._types.instructions import (
+    AuthorizeProof,
     CallFunction,
     CallMethod,
     ComponentRefWorkspace,
+    DropProofAuthorization,
     Instruction,
     InstructionArg,
     InstructionArgWorkspace,
@@ -62,6 +64,9 @@ def _remap_workspace_refs(instr: Instruction, *, offset: int) -> Instruction:
         )
     if isinstance(instr, StealthTransferInstruction):
         return _remap_stealth_transfer(instr, offset=offset)
+    if isinstance(instr, AuthorizeProof | DropProofAuthorization):
+        proof = WorkspaceOffsetId(id=instr.proof.id + offset, offset=instr.proof.offset)
+        return type(instr)(proof=proof)
     return instr
 
 

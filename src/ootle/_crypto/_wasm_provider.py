@@ -15,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ._bridge import Bridge, _abi, load_default_bridge
-from ._provider import ParsedAddress, SchnorrSignatureResult
+from ._provider import ParsedAddress
 from ._wasm_results import (
     open_box,
     take_box_result,
@@ -81,12 +81,12 @@ class WasmCryptoProvider(WasmStealthMethodsMixin):
         owner_pk: bytes,
         view_pk: bytes,
         network: int,
-        memo: bytes | None = None,
+        destination_tag: bytes | None = None,
     ) -> str:
         with self._bridge.lock:
             op, ol = _abi.alloc_bytes(self._bridge, owner_pk)
             vp, vl = _abi.alloc_bytes(self._bridge, view_pk)
-            mp, ml = _abi.alloc_optional_bytes(self._bridge, memo)
+            mp, ml = _abi.alloc_optional_bytes(self._bridge, destination_tag)
             ret = self._bridge.exports["generateOotleAddress"](
                 self._bridge.store, op, ol, vp, vl, network, mp, ml
             )
@@ -101,19 +101,10 @@ class WasmCryptoProvider(WasmStealthMethodsMixin):
                 owner = box.read_bytes("__wbg_get_parsedootleaddress_owner_key")
                 view = box.read_bytes("__wbg_get_parsedootleaddress_view_key")
                 network = box.read_int("__wbg_get_parsedootleaddress_network")
-                memo = box.read_optional_bytes("__wbg_get_parsedootleaddress_memo")
-            return ParsedAddress(owner_key=owner, view_key=view, network=network, memo=memo)
-
-    def schnorr_sign(self, sk: bytes, message: bytes) -> SchnorrSignatureResult:
-        with self._bridge.lock:
-            sp, sl = _abi.alloc_bytes(self._bridge, sk)
-            mp, ml = _abi.alloc_bytes(self._bridge, message)
-            ret = self._bridge.exports["schnorrSign"](self._bridge.store, sp, sl, mp, ml)
-            box_ptr = take_box_result(self._bridge, ret, context="schnorr_sign")
-            with open_box(self._bridge, box_ptr, "__wbg_schnorrsignatureresult_free") as box:
-                nonce = box.read_bytes("__wbg_get_schnorrsignatureresult_public_nonce")
-                sig = box.read_bytes("__wbg_get_schnorrsignatureresult_signature")
-            return SchnorrSignatureResult(public_nonce=nonce, signature=sig)
+                tag = box.read_optional_bytes("__wbg_get_parsedootleaddress_destination_tag")
+            return ParsedAddress(
+                owner_key=owner, view_key=view, network=network, destination_tag=tag
+            )
 
     def hash_unsigned_transaction(self, unsigned_json: str, seal_pk: bytes) -> bytes:
         with self._bridge.lock:

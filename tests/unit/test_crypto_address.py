@@ -23,7 +23,7 @@ def test_generate_address_matches_recorded(
         bytes.fromhex(vec["owner_pk"]),
         bytes.fromhex(vec["view_pk"]),
         vec["network"],
-        bytes.fromhex(vec["memo"]) if vec["memo"] else None,
+        bytes.fromhex(vec["destination_tag"]) if vec["destination_tag"] else None,
     )
     assert addr == vec["address"]
 
@@ -37,8 +37,8 @@ def test_parse_address_matches_recorded(
     assert parsed.owner_key.hex() == vec["owner_pk"]
     assert parsed.view_key.hex() == vec["view_pk"]
     assert parsed.network == vec["network"]
-    expected_memo = bytes.fromhex(vec["memo"]) if vec["memo"] else None
-    assert parsed.memo == expected_memo
+    expected_tag = bytes.fromhex(vec["destination_tag"]) if vec["destination_tag"] else None
+    assert parsed.destination_tag == expected_tag
 
 
 def test_parse_invalid_address_raises_crypto_bridge_error(

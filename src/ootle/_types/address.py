@@ -60,7 +60,7 @@ class ParsedAddress:
     owner_pk: bytes
     view_pk: bytes
     network: Network
-    memo: bytes | None = None
+    destination_tag: bytes | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,14 +72,14 @@ class Address:
         network: The network this address belongs to.
         owner_pk: 32-byte owner (account) Ristretto public key.
         view_pk: 32-byte view-only Ristretto public key.
-        memo: Optional opaque memo bytes encoded in the address.
+        destination_tag: Optional destination tag bytes (1-64) encoded in the address.
     """
 
     bech32m: str
     network: Network
     owner_pk: bytes
     view_pk: bytes
-    memo: bytes | None = None
+    destination_tag: bytes | None = None
 
     @classmethod
     def parse(cls, s: str, *, crypto: CryptoProvider | None = None) -> Self:
@@ -91,7 +91,7 @@ class Address:
             network=Network(parsed.network),
             owner_pk=parsed.owner_key,
             view_pk=parsed.view_key,
-            memo=parsed.memo,
+            destination_tag=parsed.destination_tag,
         )
 
     @classmethod
@@ -100,19 +100,19 @@ class Address:
         owner_pk: bytes,
         view_pk: bytes,
         network: Network,
-        memo: bytes | None = None,
+        destination_tag: bytes | None = None,
         *,
         crypto: CryptoProvider | None = None,
     ) -> Self:
         """Build an :class:`Address` from its key components."""
         provider = _resolve_crypto(crypto)
-        bech32m = provider.generate_ootle_address(owner_pk, view_pk, network.value, memo)
+        bech32m = provider.generate_ootle_address(owner_pk, view_pk, network.value, destination_tag)
         return cls(
             bech32m=bech32m,
             network=network,
             owner_pk=owner_pk,
             view_pk=view_pk,
-            memo=memo,
+            destination_tag=destination_tag,
         )
 
     def to_component_address(self) -> ComponentAddress:

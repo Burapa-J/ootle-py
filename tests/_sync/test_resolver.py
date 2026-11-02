@@ -32,7 +32,7 @@ def _empty_unsigned() -> UnsignedTransaction:
                 "inputs": [],
                 "min_epoch": None,
                 "max_epoch": 11,
-                "is_seal_signer_authorized": True,
+                "main_signer": "SealSigner",
                 "dry_run": False,
             }
         )

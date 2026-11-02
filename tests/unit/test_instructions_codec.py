@@ -80,6 +80,6 @@ def test_unsigned_body_envelope_shape() -> None:
     assert out["inputs"] == []
     assert out["min_epoch"] is None
     assert out["max_epoch"] == 11
-    assert out["is_seal_signer_authorized"] is True
+    assert out["main_signer"] == "SealSigner"
     assert out["dry_run"] is False
     assert out["nonce"] == 0

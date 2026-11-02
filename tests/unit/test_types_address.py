@@ -25,8 +25,8 @@ def test_parse_round_trips_known_addresses(
     assert addr.network == Network(vec["network"])
     assert addr.owner_pk.hex() == vec["owner_pk"]
     assert addr.view_pk.hex() == vec["view_pk"]
-    expected_memo = bytes.fromhex(vec["memo"]) if vec["memo"] else None
-    assert addr.memo == expected_memo
+    expected_tag = bytes.fromhex(vec["destination_tag"]) if vec["destination_tag"] else None
+    assert addr.destination_tag == expected_tag
 
 
 @pytest.mark.parametrize("vector_index", range(6))
@@ -35,17 +35,17 @@ def test_from_keys_matches_recorded(
 ) -> None:
     vec = _vectors(addresses_corpus)[vector_index]
     network = Network(vec["network"])
-    memo = bytes.fromhex(vec["memo"]) if vec["memo"] else None
+    tag = bytes.fromhex(vec["destination_tag"]) if vec["destination_tag"] else None
     addr = Address.from_keys(
         bytes.fromhex(vec["owner_pk"]),
         bytes.fromhex(vec["view_pk"]),
         network,
-        memo,
+        tag,
         crypto=crypto,
     )
     assert addr.bech32m == vec["address"]
     assert addr.network is network
-    assert addr.memo == memo
+    assert addr.destination_tag == tag
 
 
 def test_address_is_frozen_and_hashable(

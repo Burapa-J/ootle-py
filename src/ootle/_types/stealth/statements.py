@@ -12,11 +12,8 @@ Mirrors the upstream wire shapes in
 - :class:`StealthTransferStatement` — full transfer envelope (inputs +
   outputs + optional balance proof).
 
-UTXO bodies (:class:`UnspentOutput`, :class:`StealthUnspentOutput`) and
-the crypto-proof carriers (:class:`BalanceProofSignature`,
-:class:`ViewableBalanceProof`) live in adjacent modules; they are
-re-exported via :mod:`ootle._types.stealth` so callers don't notice
-the split.
+UTXO bodies and the crypto-proof carriers live in adjacent modules,
+re-exported via :mod:`ootle._types.stealth`.
 """
 
 from __future__ import annotations
@@ -44,8 +41,8 @@ _PEDERSEN_COMMITMENT_LEN: Final[int] = 32
 class StealthInput:
     """A reference to a stealth UTXO to be spent.
 
-    Mirrors ``template_lib::types::stealth::StealthInput`` — a single
-    32-byte Pedersen commitment.
+    Mirrors ``template_lib::types::stealth::StealthInput`` — a 32-byte
+    Pedersen commitment, always spent by the key path (``"witness": "KeyPath"``).
     """
 
     commitment: bytes
@@ -63,7 +60,7 @@ class StealthInput:
         return cls(commitment=hex_field(data, "commitment", length=_PEDERSEN_COMMITMENT_LEN))
 
     def to_json(self) -> dict[str, Any]:
-        return {"commitment": bytes_to_hex(self.commitment)}
+        return {"commitment": bytes_to_hex(self.commitment), "witness": "KeyPath"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,7 +160,8 @@ class StealthOutputsStatement:
 class StealthTransferStatement:
     """Full stealth-transfer envelope.
 
-    ``balance_proof`` is ``None`` iff the transfer is revealed-only.
+    ``balance_proof`` is ``None`` iff the transfer is revealed-only. The client
+    never spends covenant-locked inputs, so ``covenant_claims`` is always empty.
     """
 
     inputs_statement: StealthInputsStatement
@@ -197,4 +195,5 @@ class StealthTransferStatement:
             "inputs_statement": self.inputs_statement.to_json(),
             "outputs_statement": self.outputs_statement.to_json(),
             "balance_proof": None if self.balance_proof is None else self.balance_proof.to_json(),
+            "covenant_claims": [],
         }

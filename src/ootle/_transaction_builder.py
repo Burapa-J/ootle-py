@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, override
 
 from ootle._transaction_builder_build import build_unsigned
 from ootle._transaction_builder_envelope import EnvelopeMixin
@@ -12,6 +12,7 @@ from ootle._transaction_builder_fees import (
     pay_fee_from_workspace_component,
 )
 from ootle._transaction_builder_merge import merge_fee_builder, merge_into
+from ootle._transaction_builder_proofs import ProofAuthorizationMixin
 from ootle._types._tx_body import FeeBlock, UnsignedTransactionV1Body
 from ootle._types.address import ComponentAddress
 from ootle._types.instructions import (
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
     from ootle._types.transaction import UnsignedTransaction
 
 
-class TransactionBuilder(EnvelopeMixin):
+class TransactionBuilder(EnvelopeMixin, ProofAuthorizationMixin):
     """Fluent builder for :class:`UnsignedTransaction`."""
 
     __slots__ = ("_body", "_fee", "_workspace_ids")
@@ -74,6 +75,7 @@ class TransactionBuilder(EnvelopeMixin):
             raise InvalidArgumentError(msg)
         return wid
 
+    @override
     def _resolve_workspace_offset(self, label: str) -> WorkspaceOffsetId:
         return WorkspaceOffsetId(id=self._resolve_workspace(label))
 

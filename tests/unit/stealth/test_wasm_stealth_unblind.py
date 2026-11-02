@@ -92,13 +92,12 @@ def test_unblind_output_wrong_key_raises(
 
 def test_stealth_dh_secret_is_deterministic(provider: WasmCryptoProvider) -> None:
     owner_secret, _ = provider.generate_keypair()
+    view_secret, _ = provider.generate_keypair()
     _, public_nonce = provider.generate_keypair()
-    first = provider.stealth_dh_secret(
-        network_byte=16, owner_secret=owner_secret, public_nonce=public_nonce
-    )
-    second = provider.stealth_dh_secret(
-        network_byte=16, owner_secret=owner_secret, public_nonce=public_nonce
-    )
+    first = provider.stealth_dh_secret(16, owner_secret, view_secret, public_nonce)
+    second = provider.stealth_dh_secret(16, owner_secret, view_secret, public_nonce)
+    other_view, _ = provider.generate_keypair()
+    assert provider.stealth_dh_secret(16, owner_secret, other_view, public_nonce) != first
     assert len(first) == 32
     assert first == second
 
@@ -107,5 +106,8 @@ def test_stealth_dh_secret_rejects_invalid_network(provider: WasmCryptoProvider)
     owner_secret, public_nonce = provider.generate_keypair()
     with pytest.raises(CryptoBridgeError):
         provider.stealth_dh_secret(
-            network_byte=0xFF, owner_secret=owner_secret, public_nonce=public_nonce
+            network_byte=0xFF,
+            owner_secret=owner_secret,
+            view_secret=owner_secret,
+            public_nonce=public_nonce,
         )

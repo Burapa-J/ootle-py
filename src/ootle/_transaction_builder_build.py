@@ -30,7 +30,7 @@ def build_unsigned(builder: TransactionBuilder) -> UnsignedTransaction:
         inputs=list(body.inputs),
         min_epoch=body.min_epoch,
         max_epoch=body.max_epoch,
-        is_seal_signer_authorized=body.is_seal_signer_authorized,
+        main_signer=body.main_signer,
         dry_run=body.dry_run,
         blobs=list(body.blobs),
         nonce=body.nonce,

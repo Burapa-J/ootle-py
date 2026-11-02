@@ -30,8 +30,9 @@ def _unsigned_tx(network: int = 0x10, *, dry_run: bool = False) -> UnsignedTrans
         "inputs": [],
         "min_epoch": None,
         "max_epoch": 11,
-        "is_seal_signer_authorized": True,
+        "main_signer": "SealSigner",
         "dry_run": dry_run,
+        "blobs": [],
         "nonce": 0,
     }
     return UnsignedTransaction(json=json.dumps(payload))
