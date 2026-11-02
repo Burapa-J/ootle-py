@@ -6,6 +6,7 @@ from pytest_httpx import HTTPXMock
 
 from ootle._async._transport import AsyncIndexerTransport
 from ootle._types.substate import SubstateId, VaultSubstateValue
+from tests._helpers.encoded import encoded
 
 
 async def test_fetch_substate_happy_path(httpx_mock: HTTPXMock) -> None:
@@ -15,18 +16,20 @@ async def test_fetch_substate_happy_path(httpx_mock: HTTPXMock) -> None:
             "version": 7,
             "state": {
                 "up": {
-                    "substate": {
-                        "Vault": {
-                            "resource_container": {
-                                "Stealth": {
-                                    "address": "resource_aaaa",
-                                    "revealed_amount": "100",
-                                    "locked_amount": "0",
-                                }
-                            },
-                            "freeze_flags": 0,
+                    "substate": encoded(
+                        {
+                            "Vault": {
+                                "resource_container": {
+                                    "Stealth": {
+                                        "address": "resource_aaaa",
+                                        "revealed_amount": "100",
+                                        "locked_amount": "0",
+                                    }
+                                },
+                                "freeze_flags": 0,
+                            }
                         }
-                    }
+                    )
                 }
             },
             "verified": True,

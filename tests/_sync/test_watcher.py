@@ -19,6 +19,7 @@ from ootle._types._sse_events import parse_finalized_event
 from ootle._types.reject_reason import ExecutionFailure
 from ootle._types.transaction import TransactionId
 from ootle.errors import IndexerClientError, TransactionRejectedError, TransactionTimeoutError
+from tests._helpers.encoded import encoded
 
 _TX = TransactionId("deadbeef" * 8)
 
@@ -27,22 +28,24 @@ _FINALIZED_REJECT = {
     "result": {
         "Finalized": {
             "final_decision": {"Abort": "exec failed"},
-            "execution_result": {
-                "finalize": {"result": {"Reject": {"ExecutionFailure": "exec failed"}}}
-            },
+            "execution_result": encoded(
+                {"finalize": {"result": {"Reject": {"ExecutionFailure": "exec failed"}}}}
+            ),
             "abort_details": "exec failed",
         }
     }
 }
 _RECEIPT_BODY = {
-    "receipt": {
-        "epoch": 7,
-        "fee_receipt": {
-            "total_fee_payment": 100,
-            "total_fees_paid": 100,
-            "total_fee_overcharge": 0,
-        },
-    }
+    "receipt": encoded(
+        {
+            "epoch": 7,
+            "fee_receipt": {
+                "total_fee_payment": 100,
+                "total_fees_paid": 100,
+                "total_fee_overcharge": 0,
+            },
+        }
+    )
 }
 
 

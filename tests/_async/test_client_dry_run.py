@@ -12,6 +12,7 @@ from ootle._async._send import mark_dry_run
 from ootle._types.network import Network
 from ootle._types.transaction import TransactionRequest, UnsignedTransaction
 from ootle.errors import InvalidArgumentError
+from tests._helpers.encoded import encoded
 
 from ._helpers import network_response
 
@@ -39,24 +40,26 @@ def _unsigned_tx(network: int = 0x10, *, dry_run: bool = False) -> UnsignedTrans
 
 
 def _dry_run_response(fee: int = 500) -> dict[str, object]:
-    # Mirrors the engine ``ExecuteResult`` JSON the indexer returns.
+    # Mirrors the engine ``ExecuteResult`` the indexer returns, CBOR-encoded.
     return {
         "transaction_id": "deadbeef" * 8,
-        "result": {
-            "finalize": {
-                "result": {"Accept": {"up_substates": [], "down_substates": []}},
-                "events": [],
-                "logs": [],
-                "fee_receipt": {
-                    "total_fee_payment": fee,
-                    "total_fees_paid": fee,
-                    "total_fee_overcharge": 0,
-                    "cost_breakdown": {"breakdown": {"RuntimeCall": fee}},
+        "result": encoded(
+            {
+                "finalize": {
+                    "result": {"Accept": {"up_substates": [], "down_substates": []}},
+                    "events": [],
+                    "logs": [],
+                    "fee_receipt": {
+                        "total_fee_payment": fee,
+                        "total_fees_paid": fee,
+                        "total_fee_overcharge": 0,
+                        "cost_breakdown": {"breakdown": {"RuntimeCall": fee}},
+                    },
                 },
-            },
-            "execution_time": {"secs": 0, "nanos": 1},
-            "execute_epoch": 3,
-        },
+                "execution_time": {"secs": 0, "nanos": 1},
+                "execute_epoch": 3,
+            }
+        ),
     }
 
 

@@ -10,6 +10,7 @@ from pytest_httpx import HTTPXMock
 from ootle import OotleClient
 from ootle._sync import _events as events_mod
 from ootle._types.events import TransactionEvent, TransactionEventFilter
+from tests._helpers.encoded import encoded
 from tests._helpers.sse import fake_connect_sse
 
 from ._helpers import network_response
@@ -22,7 +23,7 @@ def _sse(topic: str, *, id: str = "1", template: str | None = None) -> tuple[str
     inner: dict[str, object] = {"payload": {}}
     if template is not None:
         inner["template_address"] = template
-    data = json.dumps({"transaction_id": "tx" + id, "event": inner})
+    data = json.dumps({"transaction_id": "tx" + id, "event": encoded(inner)})
     return (topic, id, data)
 
 
@@ -70,7 +71,8 @@ def test_watch_events_ignores_malformed_sse(
     monkeypatch: pytest.MonkeyPatch, httpx_mock: HTTPXMock
 ) -> None:
     httpx_mock.add_response(url="http://idx/network", json=_NETWORK)
-    events_raw = [("bad", "1", "not-json"), _sse("Good::Event")]
+    undecodable = json.dumps({"transaction_id": "tx2", "event": "not-cbor!"})
+    events_raw = [("bad", "1", "not-json"), ("bad", "2", undecodable), _sse("Good::Event")]
 
     def _fake(_c: object, _m: object, _u: object, **_kw: object) -> object:
         return fake_connect_sse(events_raw)

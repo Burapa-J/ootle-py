@@ -19,6 +19,7 @@ from ootle._types.substate import (
     VaultContainerKind,
     VaultSubstateValue,
 )
+from tests._helpers.encoded import encoded
 
 
 def bor_tag(tag: BinaryTag, opaque: str) -> dict[str, Any]:
@@ -67,12 +68,12 @@ def fungible_vault_value(resource: str, amount: int) -> dict[str, Any]:
 
 def envelope(value: dict[str, Any], *, version: int = 0) -> dict[str, Any]:
     """A ``GET /substates/{id}`` response body wrapping ``value``."""
-    return {"version": version, "state": {"up": {"substate": value}}, "verified": False}
+    return {"version": version, "state": {"up": {"substate": encoded(value)}}, "verified": False}
 
 
 def batch_entry(value: dict[str, Any], *, version: int = 0) -> dict[str, Any]:
     """A ``POST /substates/fetch`` ``substates`` map entry wrapping ``value``."""
-    return {"version": version, "substate": value}
+    return {"version": version, "value": encoded(value)}
 
 
 def component_substate(component_id: str, vaults: dict[str, str]) -> Substate:

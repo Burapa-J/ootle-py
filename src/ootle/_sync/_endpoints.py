@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
+from ootle._types._encoded import EncodedKind, decode_encoded_object
 from ootle._types._indexer_json import (
     parse_submit_response,
     parse_transaction_result,
@@ -42,11 +43,13 @@ def submit_transaction(transport: IndexerTransport, envelope_b64: str) -> Transa
 def submit_transaction_dry_run(transport: IndexerTransport, envelope_b64: str) -> DryRunResult:
     """``POST /transactions/dry-run`` → :class:`DryRunResult`."""
     resp = _post(transport, "transactions/dry-run", {"transaction": envelope_b64})
-    body: dict[str, Any] = parse_json_object(resp, _identity)
+    return parse_json_object(resp, _parse_dry_run)
+
+
+def _parse_dry_run(body: dict[str, Any]) -> DryRunResult:
     tx_id = TransactionId(require_str(body, "transaction_id"))
-    raw = body.get("result")
-    raw_dict: dict[str, object] = cast("dict[str, object]", raw) if isinstance(raw, dict) else {}
-    return DryRunResult(transaction_id=tx_id, raw=raw_dict)
+    raw = decode_encoded_object(EncodedKind.EXECUTE_RESULT, body.get("result"), "result")
+    return DryRunResult(transaction_id=tx_id, raw=raw)
 
 
 def get_transaction_result(
@@ -73,12 +76,12 @@ def get_transaction_receipt(
     )
     if resp is None:
         return None
-    body: dict[str, Any] = parse_json_object(resp, _identity)
-    receipt_payload = body.get("receipt")
-    if not isinstance(receipt_payload, dict):
-        msg = "expected `receipt` field to be an object"
-        raise TypeError(msg)
-    return parse_receipt(cast("dict[str, Any]", receipt_payload))
+    return parse_json_object(resp, _parse_receipt_response)
+
+
+def _parse_receipt_response(body: dict[str, Any]) -> TransactionReceipt:
+    encoded = body.get("receipt")
+    return parse_receipt(decode_encoded_object(EncodedKind.TRANSACTION_RECEIPT, encoded, "receipt"))
 
 
 def get_transaction_watcher(
@@ -141,7 +144,3 @@ def parse_json_object[T](resp: httpx.Response, parser: Callable[[dict[str, Any]]
             body=resp.text,
             url=str(resp.url),
         ) from exc
-
-
-def _identity(payload: dict[str, Any]) -> dict[str, Any]:
-    return payload

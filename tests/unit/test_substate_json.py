@@ -18,6 +18,7 @@ from ootle._types.substate import (
     UnknownSubstateValue,
     VaultSubstateValue,
 )
+from tests._helpers.encoded import encoded
 
 FIXTURES = Path(__file__).parent.parent / "fixtures" / "substate_examples"
 
@@ -157,7 +158,8 @@ def test_parse_amount_rejects_other_types(bad: object) -> None:
 
 def _get_response(name: str) -> dict[str, Any]:
     fixture = _envelope(name)
-    return {"version": fixture["version"], "state": {"up": {"substate": fixture["substate"]}}}
+    value = encoded(fixture["substate"])
+    return {"version": fixture["version"], "state": {"up": {"substate": value}}}
 
 
 def test_parse_indexer_substate_threads_id_and_version() -> None:

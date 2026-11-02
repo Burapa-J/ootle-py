@@ -69,22 +69,27 @@ ci-verify-sync: ## Regenerate _sync to a temp dir and assert byte-equality with 
 
 # ---------- WASM bridge ----------------------------------------------------
 
-update-wasm: ## Refresh the vendored WASM blob (requires WASM_VERSION=x.y.z).
+VERIFY_WASM := from ootle._crypto import load_default_provider; \
+	from ootle._crypto._bridge import load_bor_bridge; \
+	load_default_provider(); load_bor_bridge()
+
+update-wasm: ## Refresh both vendored WASM blobs (requires WASM_VERSION=x.y.z).
 	@if [ -z "$(WASM_VERSION)" ]; then \
 		echo "error: WASM_VERSION is required, e.g. make update-wasm WASM_VERSION=0.30.0" >&2; \
 		exit 1; \
 	fi
-	$(UV) run python scripts/update_wasm.py --version $(WASM_VERSION)
+	$(UV) run python scripts/update_wasm.py --blob core --version $(WASM_VERSION)
+	$(UV) run python scripts/update_wasm.py --blob bor --version $(WASM_VERSION)
 
-update-wasm-local: ## Vendor a locally built WASM blob (requires PKG=/path/to/pkg).
+update-wasm-local: ## Vendor a locally built WASM blob (requires PKG=/path/to/pkg; BLOB=core|bor).
 	@if [ -z "$(PKG)" ]; then \
 		echo "error: PKG is required, e.g. make update-wasm-local PKG=/path/to/pkg" >&2; \
 		exit 1; \
 	fi
-	$(UV) run python scripts/update_wasm.py --from-pkg $(PKG)
+	$(UV) run python scripts/update_wasm.py --blob $(or $(BLOB),core) --from-pkg $(PKG)
 
-ci-verify-wasm: ## Verify SHA-256 of the vendored WASM blob and that the loader instantiates.
-	$(UV) run python -c "from ootle._crypto import load_default_provider; load_default_provider()"
+ci-verify-wasm: ## Verify SHA-256 of both vendored WASM blobs and that the loader instantiates.
+	$(UV) run python -c "$(VERIFY_WASM)"
 
 # ---------- application ----------------------------------------------------
 

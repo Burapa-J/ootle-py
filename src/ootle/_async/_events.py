@@ -69,7 +69,7 @@ def _parse_sse_event(*, sse_topic: str, sse_id: str, data: str) -> TransactionEv
 
     The indexer transmits the event topic via the SSE ``event:`` line and a
     monotonic event id via the SSE ``id:`` line; the JSON body carries
-    ``{transaction_id, event: {substate_id, template_address, payload}}``.
+    ``{transaction_id, event}`` with the event as base64 CBOR.
     """
     try:
         raw: Any = json.loads(data)

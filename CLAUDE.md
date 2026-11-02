@@ -45,6 +45,7 @@ Honour them; revisit only with explicit user agreement.
 | Topic               | Decision |
 |---------------------|----------|
 | Cryptography        | The `@tari-project/ootle-wasm` blob is vendored at `src/ootle/_crypto/wasm/` and loaded via `wasmtime-py`. All Ristretto/Schnorr/Borsh work goes through this bridge. No Python-side reimplementation. |
+| Indexer CBOR values | Since tari-ootle 0.48 the indexer serves engine values (substate values, execution results, receipts, events) as base64 CBOR. The `@tari-project/ootle-wasm-bor` blob is vendored at `src/ootle/_crypto/wasm_bor/`, loaded through the same bridge, and decodes them to the JSON the parsers read (`_crypto/_bor.py`, `_types/_encoded.py`). No Python CBOR decoder. |
 | Concurrency model   | **Async-first**: `src/ootle/_async/` is the source of truth. `src/ootle/_sync/` is **generated** by `unasync` at build time and committed to the repo. CI verifies the two trees stay in sync. |
 | Public surface      | `from ootle import OotleClient, AsyncOotleClient, OotleWallet, …` — both clients ship in v1, identical in shape, sync vs. async. |
 | v1 scope            | Read-only queries + public transfers + multi-signer co-signing. The faucet (public path), `IAccount`, `IComponent`, dry-run, and event watching all ship in v1. Stealth transfers (revealed + stealth outputs, multi-input aggregation, faucet stealth path, UTXO read helpers) also ship, backed by the same WASM blob. |
@@ -245,7 +246,7 @@ ootle-python/
 │   └── ootle-rs/                       # architectural reference for the Rust upstream
 ├── scripts/
 │   ├── unasync.py                      # generate src/ootle/_sync/ from src/ootle/_async/
-│   └── update_wasm.py                  # refresh the vendored ootle-wasm blob
+│   └── update_wasm.py                  # refresh a vendored WASM blob
 ├── src/ootle/                          # the package — modules under 200 lines
 │   ├── __init__.py                     # public exports
 │   ├── __main__.py / cli.py
@@ -256,7 +257,8 @@ ootle-python/
 │   ├── _instructions.py                # args(), workspace() (sync, shared)
 │   ├── _types/                         # frozen dataclasses (sync, shared)
 │   ├── _crypto/                        # WASM bridge (sync, shared)
-│   │   └── wasm/                       # vendored .wasm blob + VERSION
+│   │   ├── wasm/                       # vendored ootle-wasm blob + VERSION
+│   │   └── wasm_bor/                   # vendored ootle-wasm-bor blob + VERSION
 │   ├── _async/                         # SOURCE OF TRUTH for async I/O
 │   │   ├── client.py
 │   │   ├── _transport.py
@@ -295,16 +297,22 @@ ootle-python/
   `aconnect_sse → connect_sse`, class-name maps) live in
   `scripts/unasync.py`.
 
-### The vendored WASM blob
+### The vendored WASM blobs
 
-- The `.wasm` artefact lives at `src/ootle/_crypto/wasm/ootle_wasm_bg.wasm`,
-  committed to git as binary package data.
-- `src/ootle/_crypto/wasm/VERSION` records the upstream `ootle-wasm` version,
-  the SHA-256 of the blob, and the fetch date. The bridge **verifies the
-  hash at load** and refuses to instantiate on mismatch.
-- Refresh procedure: `make update-wasm WASM_VERSION=<x.y.z>`. This is a
-  deliberate human-in-the-loop PR — bumps are reviewed, not automated.
-- Never edit the blob or `VERSION` by hand. Never `.gitignore` either.
+- Two blobs, committed to git as binary package data:
+  `src/ootle/_crypto/wasm/ootle_wasm_bg.wasm` (`ootle-wasm`: keys, addresses,
+  signing, stealth) and `src/ootle/_crypto/wasm_bor/ootle_wasm_bor_bg.wasm`
+  (`ootle-wasm-bor`: decoders for the indexer's CBOR values).
+- Each directory's `VERSION` records the upstream version, the SHA-256 of the
+  blob, and the fetch date. The bridge **verifies the hash at load** and
+  refuses to instantiate on mismatch.
+- Refresh procedure: `make update-wasm WASM_VERSION=<x.y.z>` refreshes both
+  (upstream releases them in lockstep). This is a deliberate
+  human-in-the-loop PR — bumps are reviewed, not automated.
+- Never edit a blob or `VERSION` by hand. Never `.gitignore` either.
+- Tests that hand-build indexer responses wrap the expected decoded JSON with
+  `tests/_helpers/encoded.encoded(...)`; an autouse fixture decodes those and
+  passes real CBOR through to the blob (`tests/unit/test_bor_decode.py`).
 
 ---
 
@@ -339,7 +347,7 @@ make ci                            # exact CI gate (includes unasync + WASM gate
 make test ARGS="-k name"           # run a single test
 make run ARGS="--version"          # run the CLI
 make unasync                       # regenerate src/ootle/_sync/ from _async/
-make update-wasm WASM_VERSION=x.y  # refresh the vendored ootle-wasm blob
+make update-wasm WASM_VERSION=x.y  # refresh both vendored WASM blobs
 ```
 
 ### Reference

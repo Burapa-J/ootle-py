@@ -1,8 +1,8 @@
 """WASM runtime loader.
 
-Loads the vendored ``ootle_wasm_bg.wasm`` blob, verifies its SHA-256
-against the committed ``VERSION`` metadata, and instantiates a single
-process-wide ``wasmtime`` Engine + Store + Module + Instance.
+Loads a vendored blob (``ootle_wasm_bg.wasm``, or the ``ootle-wasm-bor``
+decoders), verifies its SHA-256 against the committed ``VERSION`` metadata,
+and instantiates a ``wasmtime`` Engine + Store + Module + Instance for it.
 
 Layers 1-3 never touch ``wasmtime`` directly — this module is the only
 place that imports it.
@@ -23,9 +23,19 @@ from ootle.errors import CryptoBridgeError
 
 logger = logging.getLogger(__name__)
 
-WASM_PKG = "ootle._crypto.wasm"
-WASM_FILENAME = "ootle_wasm_bg.wasm"
 VERSION_FILENAME = "VERSION"
+
+
+@dataclass(frozen=True, slots=True)
+class BlobSpec:
+    """Where a vendored blob lives: its resource package and file name."""
+
+    pkg: str
+    filename: str
+
+
+CORE_BLOB = BlobSpec("ootle._crypto.wasm", "ootle_wasm_bg.wasm")
+BOR_BLOB = BlobSpec("ootle._crypto.wasm_bor", "ootle_wasm_bor_bg.wasm")
 
 ImportProvider = Callable[[wasmtime.Store, wasmtime.Module, wasmtime.Linker], None]
 """Callback that defines all ``__wbg_*`` host imports on a Linker.
@@ -66,19 +76,19 @@ def _parse_version(text: str) -> _Version:
         ) from exc
 
 
-def _read_version() -> _Version:
-    text = (files(WASM_PKG) / VERSION_FILENAME).read_text(encoding="utf-8")
+def _read_version(spec: BlobSpec = CORE_BLOB) -> _Version:
+    text = (files(spec.pkg) / VERSION_FILENAME).read_text(encoding="utf-8")
     return _parse_version(text)
 
 
-def _read_blob() -> bytes:
-    return (files(WASM_PKG) / WASM_FILENAME).read_bytes()
+def _read_blob(spec: BlobSpec = CORE_BLOB) -> bytes:
+    return (files(spec.pkg) / spec.filename).read_bytes()
 
 
-def load_blob() -> tuple[bytes, _Version]:
+def load_blob(spec: BlobSpec = CORE_BLOB) -> tuple[bytes, _Version]:
     """Read the vendored blob and assert ``sha256(blob) == VERSION.sha256``."""
-    version = _read_version()
-    blob = _read_blob()
+    version = _read_version(spec)
+    blob = _read_blob(spec)
     actual = hashlib.sha256(blob).hexdigest()
     if not hmac.compare_digest(actual, version.sha256):
         logger.error(
@@ -112,16 +122,19 @@ class WasmRuntime:
     version: _Version
 
     @classmethod
-    def load(cls, *, define_imports: ImportProvider | None = None) -> WasmRuntime:
+    def load(
+        cls, *, define_imports: ImportProvider | None = None, spec: BlobSpec = CORE_BLOB
+    ) -> WasmRuntime:
         """Load, verify, and instantiate the vendored blob.
 
         Args:
+            spec: Which vendored blob to load (the core blob by default).
             define_imports: Callback that registers the ``__wbg_*`` host
                 imports on the Linker. ``None`` installs ``NotImplementedError``
                 stubs — useful only for the M0.T3 smoke path where exports
                 are not yet called.
         """
-        blob, version = load_blob()
+        blob, version = load_blob(spec)
         engine = wasmtime.Engine()
         store = wasmtime.Store(engine)
         module = wasmtime.Module(engine, blob)

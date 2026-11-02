@@ -12,6 +12,10 @@ from ootle._crypto import _wasm_runtime as rt
 from ootle.errors import CryptoBridgeError
 
 
+def _bogus_blob(_spec: rt.BlobSpec = rt.CORE_BLOB) -> bytes:
+    return b"\x00asm\x00\x00\x00\x00bogus"
+
+
 def test_root_logger_has_null_handler() -> None:
     """`ootle/__init__` installs a NullHandler so unconfigured callers stay quiet."""
     handlers = logging.getLogger("ootle").handlers
@@ -46,7 +50,7 @@ async def test_transport_logs_request_path_at_debug(
 def test_wasm_sha_mismatch_logs_error_before_raising(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    monkeypatch.setattr(rt, "_read_blob", lambda: b"\x00asm\x00\x00\x00\x00bogus")
+    monkeypatch.setattr(rt, "_read_blob", _bogus_blob)
     with caplog.at_level(logging.ERROR, logger="ootle._crypto._wasm_runtime"):
         with pytest.raises(CryptoBridgeError):
             rt.load_blob()

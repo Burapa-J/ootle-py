@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ootle._types._encoded import EncodedKind, decode_encoded_object
 from ootle._types._json_helpers import (
     as_dict,
     as_str,
@@ -83,9 +84,10 @@ def parse_sse_event(sse_topic: str, sse_id: str, payload: dict[str, Any]) -> Tra
 
     The indexer transmits the topic via the SSE ``event:`` line and the
     numeric event id via the SSE ``id:`` line. The JSON body carries
-    ``{transaction_id, event: {substate_id, template_address, payload}}``.
+    ``{transaction_id, event}``, the event as base64 CBOR that decodes to
+    ``{substate_id, template_address, topic, payload}``.
     """
-    inner = require_dict(payload, "event")
+    inner = decode_encoded_object(EncodedKind.EVENT, payload.get("event"), "event")
     template = inner.get("template_address")
     if template is not None and not isinstance(template, str):
         msg = "event `template_address` must be a string when present"

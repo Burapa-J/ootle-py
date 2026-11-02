@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Refresh the vendored ``@tari-project/ootle-wasm`` blob.
+"""Refresh a vendored ``@tari-project/ootle-wasm`` (or ``ootle-wasm-bor``) blob.
+
+``--blob core`` (the default) vendors ``ootle-wasm``, which builds and signs
+transactions; ``--blob bor`` vendors ``ootle-wasm-bor``, which decodes the
+CBOR values the indexer serves. ``make update-wasm`` refreshes both.
 
 Two sourcing modes are supported:
 
@@ -42,17 +46,20 @@ from pathlib import Path
 
 from _wasm_vendor import local_label, local_source, read_local_blob
 
-PACKAGE = "@tari-project/ootle-wasm"
-WASM_FILENAME = "ootle_wasm_bg.wasm"
-TARGET_DIR = Path(__file__).resolve().parent.parent / "src" / "ootle" / "_crypto" / "wasm"
+_CRYPTO_DIR = Path(__file__).resolve().parent.parent / "src" / "ootle" / "_crypto"
+# blob → (npm package name, blob file name, vendored directory)
+BLOBS = {
+    "core": ("ootle-wasm", "ootle_wasm_bg.wasm", _CRYPTO_DIR / "wasm"),
+    "bor": ("ootle-wasm-bor", "ootle_wasm_bor_bg.wasm", _CRYPTO_DIR / "wasm_bor"),
+}
 
 
-def _registry_tarball_url(version: str) -> str:
-    return f"https://registry.npmjs.org/@tari-project/ootle-wasm/-/ootle-wasm-{version}.tgz"
+def _registry_tarball_url(name: str, version: str) -> str:
+    return f"https://registry.npmjs.org/@tari-project/{name}/-/{name}-{version}.tgz"
 
 
-def _source_page_url(version: str) -> str:
-    return f"https://www.npmjs.com/package/{PACKAGE}/v/{version}"
+def _source_page_url(name: str, version: str) -> str:
+    return f"https://www.npmjs.com/package/@tari-project/{name}/v/{version}"
 
 
 def _download(url: str) -> bytes:
@@ -61,16 +68,16 @@ def _download(url: str) -> bytes:
         return resp.read()
 
 
-def _extract_blob(tgz_bytes: bytes) -> bytes:
+def _extract_blob(tgz_bytes: bytes, filename: str) -> bytes:
     with tarfile.open(fileobj=io.BytesIO(tgz_bytes), mode="r:gz") as tar:
         for member in tar.getmembers():
-            if member.name.endswith(f"/{WASM_FILENAME}"):
+            if member.name.endswith(f"/{filename}"):
                 fh = tar.extractfile(member)
                 if fh is None:
                     msg = f"tar entry {member.name!r} is not a regular file"
                     raise RuntimeError(msg)
                 return fh.read()
-    msg = f"{WASM_FILENAME!r} not found in tarball"
+    msg = f"{filename!r} not found in tarball"
     raise RuntimeError(msg)
 
 
@@ -80,17 +87,21 @@ def _write_version(target: Path, version: str, sha256_hex: str, source: str) -> 
     (target / "VERSION").write_text(text, encoding="utf-8")
 
 
-def _print_summary(version: str, sha256_hex: str, blob_len: int, target: Path) -> None:
+def _print_summary(name: str, version: str, sha256_hex: str, blob_len: int, target: Path) -> None:
     line = (
-        f"Vendored ootle-wasm {version} "
-        f"(sha256={sha256_hex[:12]}…, {blob_len:,} bytes) "
-        f"into {target}."
+        f"Vendored {name} {version} (sha256={sha256_hex[:12]}…, {blob_len:,} bytes) into {target}."
     )
     print(line)
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--blob",
+        choices=sorted(BLOBS),
+        default="core",
+        help="Which blob to vendor: core (ootle-wasm, default) or bor (ootle-wasm-bor).",
+    )
     source = parser.add_mutually_exclusive_group()
     source.add_argument(
         "--version",
@@ -121,8 +132,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--target-dir",
         type=Path,
-        default=TARGET_DIR,
-        help="Directory to write the blob and VERSION into (default: the vendored package dir).",
+        help="Directory to write the blob and VERSION into (default: the blob's package dir).",
     )
     return parser
 
@@ -130,9 +140,10 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    name, filename, default_target = BLOBS[args.blob]
 
     if args.from_pkg is not None:
-        blob = read_local_blob(args.from_pkg / WASM_FILENAME)
+        blob = read_local_blob(args.from_pkg / filename)
         label = local_label(args.label, args.from_pkg)
         source = local_source(args.source, args.from_pkg)
     elif args.from_file is not None:
@@ -140,18 +151,18 @@ def main(argv: list[str] | None = None) -> int:
         label = local_label(args.label, None)
         source = local_source(args.source, args.from_file)
     elif args.version:
-        blob = _extract_blob(_download(_registry_tarball_url(args.version)))
-        label, source = args.version, _source_page_url(args.version)
+        blob = _extract_blob(_download(_registry_tarball_url(name, args.version)), filename)
+        label, source = args.version, _source_page_url(name, args.version)
     else:
         parser.error("one of --version/--from-pkg/--from-file (or WASM_VERSION) is required")
 
-    target: Path = args.target_dir
+    target: Path = args.target_dir or default_target
     target.mkdir(parents=True, exist_ok=True)
     sha256_hex = hashlib.sha256(blob).hexdigest()
-    (target / WASM_FILENAME).write_bytes(blob)
+    (target / filename).write_bytes(blob)
     _write_version(target, label, sha256_hex, source)
 
-    _print_summary(label, sha256_hex, len(blob), target)
+    _print_summary(name, label, sha256_hex, len(blob), target)
     print(
         "Next: review the diff, then run `make ci-verify-wasm` and `make ci`.",
         file=sys.stderr,
