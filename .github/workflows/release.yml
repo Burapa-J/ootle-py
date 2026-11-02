@@ -42,10 +42,12 @@ jobs:
       - name: Build wheel + sdist
         run: make build
 
-      - name: Verify wheel bundles the WASM blob
+      - name: Verify wheel bundles the WASM blobs
         run: |
           unzip -l dist/ootle_py-*.whl | grep -q ootle_wasm_bg.wasm
-          unzip -l dist/ootle_py-*.whl | grep -q VERSION
+          unzip -l dist/ootle_py-*.whl | grep -q ootle_wasm_bor_bg.wasm
+          unzip -l dist/ootle_py-*.whl | grep -q wasm/VERSION
+          unzip -l dist/ootle_py-*.whl | grep -q wasm_bor/VERSION
 
       - name: Validate distributions
         run: uv run --with twine twine check dist/*
