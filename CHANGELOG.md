@@ -5,6 +5,18 @@ All notable changes to `ootle` are recorded here. The project follows
 releases may introduce breaking changes between minor versions, but
 each is called out below.
 
+## [0.5.0] — 2026-11-07
+
+Tracks the upstream
+[`tari-ootle` v0.50.1](https://github.com/tari-project/tari-ootle/releases/tag/v0.50.1)
+release (v0.50.0 plus macOS arm64 builds).
+
+### Changed
+
+- **Vendored `ootle-wasm` and `ootle-wasm-bor` bumped to 0.50.1.**
+- **`AbortReason` gains `InputLoadTooLarge`**, for a transaction whose inputs
+  in one shard group exceed the 4 MiB per-transaction load cap.
+
 ## [0.4.0] — 2026-11-02
 
 Tracks the upstream
