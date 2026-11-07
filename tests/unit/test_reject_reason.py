@@ -128,7 +128,13 @@ def test_parse_epoch_expired_abort_reason() -> None:
 
 
 @pytest.mark.parametrize(
-    "reason", ["ValidityWindowTooLong", "InputPledgeTooLarge", "GovernanceCallAfterPinnedEpoch"]
+    "reason",
+    [
+        "ValidityWindowTooLong",
+        "InputPledgeTooLarge",
+        "GovernanceCallAfterPinnedEpoch",
+        "InputLoadTooLarge",
+    ],
 )
 def test_parse_later_abort_reasons(reason: AbortReason) -> None:
     assert parse_reject_reason({"Abort": {"reason": reason}}) == Abort(reason=reason)
