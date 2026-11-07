@@ -5,7 +5,7 @@ All notable changes to `ootle` are recorded here. The project follows
 releases may introduce breaking changes between minor versions, but
 each is called out below.
 
-## [Unreleased]
+## [0.5.0] — 2026-11-07
 
 Tracks the upstream
 [`tari-ootle` v0.50.1](https://github.com/tari-project/tari-ootle/releases/tag/v0.50.1)
